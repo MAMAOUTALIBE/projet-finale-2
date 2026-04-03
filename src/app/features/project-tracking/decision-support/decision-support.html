@@ -1,0 +1,131 @@
+<div class="row row-sm">
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Priorite critique</p>
+        @if (data$ | async; as data) {
+          <h4 class="mb-0 fw-semibold text-danger">{{ data.summary.critical }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Priorite haute</p>
+        @if (data$ | async; as data) {
+          <h4 class="mb-0 fw-semibold text-warning">{{ data.summary.high }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Priorite moyenne</p>
+        @if (data$ | async; as data) {
+          <h4 class="mb-0 fw-semibold text-info">{{ data.summary.medium }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Priorite basse</p>
+        @if (data$ | async; as data) {
+          <h4 class="mb-0 fw-semibold">{{ data.summary.low }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Projets bloques</p>
+        @if (data$ | async; as data) {
+          <h4 class="mb-0 fw-semibold text-danger">{{ data.summary.blockedProjects }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Progression moyenne</p>
+        @if (data$ | async; as data) {
+          <h4 class="mb-0 fw-semibold">{{ data.summary.averageProgress }}%</h4>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title mb-0">Aide a la decision (priorisation portefeuille)</h3>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered text-nowrap mb-0">
+            <thead>
+              <tr>
+                <th>Priorite</th>
+                <th>Projet</th>
+                <th>Score risque</th>
+                <th>Probleme principal</th>
+                <th>Indicateurs</th>
+                <th>Recommandation</th>
+                <th>Mis a jour</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (data$ | async; as data) {
+                @for (action of data.actions; track trackByAction($index, action)) {
+                  <tr>
+                    <td>
+                      <span [class]="'badge ' + priorityBadgeClass(action.priority)">
+                        {{ action.priority }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="fw-semibold">{{ action.name }}</div>
+                      <div class="text-muted tx-12">{{ action.code }}</div>
+                    </td>
+                    <td class="fw-semibold">{{ action.riskScore }}</td>
+                    <td>{{ action.mainIssue }}</td>
+                    <td>
+                      <div class="tx-12">Retards: {{ action.delayedActivities }}</div>
+                      <div class="tx-12">Blocages: {{ action.openBlockages }} (critiques: {{ action.criticalBlockages }})</div>
+                      <div class="tx-12">Validations: {{ action.pendingValidations }}</div>
+                      <div class="tx-12">Actions: {{ action.openDecisionActions }} (en retard: {{ action.overdueDecisionActions }})</div>
+                    </td>
+                    <td class="text-wrap" style="max-width: 320px;">{{ action.recommendation }}</td>
+                    <td>{{ action.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                    <td>
+                      <a class="btn btn-sm btn-outline-primary" [routerLink]="action.actionUrl">
+                        Ouvrir
+                      </a>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="8" class="text-center text-muted">Aucune donnee de priorisation disponible.</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

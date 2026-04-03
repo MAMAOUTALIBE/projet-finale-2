@@ -1,0 +1,116 @@
+<div class="row row-sm">
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Mes activites</p>
+        @if (workspace$ | async; as workspace) {
+          <h4 class="mb-0 fw-semibold">{{ workspace.summary.myActivities }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Retards</p>
+        @if (workspace$ | async; as workspace) {
+          <h4 class="mb-0 fw-semibold text-danger">{{ workspace.summary.overdueActivities }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Validations</p>
+        @if (workspace$ | async; as workspace) {
+          <h4 class="mb-0 fw-semibold text-warning">{{ workspace.summary.pendingValidations }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Mes blocages ouverts</p>
+        @if (workspace$ | async; as workspace) {
+          <h4 class="mb-0 fw-semibold text-danger">{{ workspace.summary.myOpenBlockages }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Documents a revoir</p>
+        @if (workspace$ | async; as workspace) {
+          <h4 class="mb-0 fw-semibold text-info">{{ workspace.summary.documentsToReview }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title mb-0">Mon espace de travail</h3>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered text-nowrap mb-0">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Projet</th>
+                <th>Element</th>
+                <th>Statut</th>
+                <th>Echeance / Date</th>
+                <th>Priorite</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (workspace$ | async; as workspace) {
+                @for (item of workspace.items; track trackByItem($index, item)) {
+                  <tr>
+                    <td>
+                      <span [class]="'badge ' + itemTypeBadgeClass(item.type)">{{ itemTypeLabel(item.type) }}</span>
+                    </td>
+                    <td>
+                      <div class="fw-semibold">{{ item.projectName }}</div>
+                      <div class="text-muted tx-12">{{ item.projectCode }}</div>
+                    </td>
+                    <td>
+                      <div class="fw-semibold">{{ item.title }}</div>
+                      <div class="text-muted tx-12">{{ item.detail }}</div>
+                    </td>
+                    <td>{{ item.status }}</td>
+                    <td>{{ item.dueAt ? (item.dueAt | date: 'dd/MM/yyyy HH:mm') : (item.createdAt | date: 'dd/MM/yyyy HH:mm') }}</td>
+                    <td>
+                      <span [class]="'badge ' + priorityBadgeClass(item.priority)">{{ item.priority }}</span>
+                    </td>
+                    <td>
+                      <a class="btn btn-sm btn-outline-primary" [routerLink]="item.actionUrl">
+                        Ouvrir
+                      </a>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">Aucune action en attente dans votre espace.</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

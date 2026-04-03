@@ -1,0 +1,167 @@
+<div class="row row-sm">
+  <div class="col-xl-3 col-lg-6 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex">
+          <div>
+            <p class="mb-1 tx-inverse">Total projets</p>
+            @if (metrics$ | async; as metrics) {
+              <h4 class="mb-0 fw-semibold">{{ metrics.total }}</h4>
+            }
+          </div>
+          <div class="ms-auto">
+            <span class="badge bg-primary-transparent text-primary">Actifs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-lg-6 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex">
+          <div>
+            <p class="mb-1 tx-inverse">En cours</p>
+            @if (metrics$ | async; as metrics) {
+              <h4 class="mb-0 fw-semibold">{{ metrics.inProgress }}</h4>
+            }
+          </div>
+          <div class="ms-auto">
+            <span class="badge bg-info-transparent text-info">Suivi</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-lg-6 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex">
+          <div>
+            <p class="mb-1 tx-inverse">Bloques</p>
+            @if (metrics$ | async; as metrics) {
+              <h4 class="mb-0 fw-semibold">{{ metrics.blocked }}</h4>
+            }
+          </div>
+          <div class="ms-auto">
+            <span class="badge bg-danger-transparent text-danger">Alerte</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-lg-6 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex">
+          <div>
+            <p class="mb-1 tx-inverse">Finalises</p>
+            @if (metrics$ | async; as metrics) {
+              <h4 class="mb-0 fw-semibold">{{ metrics.completed }}</h4>
+            }
+          </div>
+          <div class="ms-auto">
+            <span class="badge bg-success-transparent text-success">OK</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Lancement rapide</h3>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-3">
+          Demarrage Sprint 1: creation des projets structurants et suivi initial de l'execution.
+        </p>
+        <div class="d-flex gap-2 flex-wrap">
+          <a class="btn btn-light" routerLink="/project-tracking/workspace">Mon espace</a>
+          <a class="btn btn-primary" routerLink="/project-tracking/projects/new">Nouveau projet</a>
+          <a class="btn btn-light" routerLink="/project-tracking/projects">Voir les projets</a>
+          <a class="btn btn-light" routerLink="/project-tracking/reports">Reporting</a>
+          <a class="btn btn-light" routerLink="/project-tracking/decision-support">Aide decision</a>
+          <a class="btn btn-light" routerLink="/project-tracking/decision-actions">Plan actions</a>
+          <a class="btn btn-light" routerLink="/project-tracking/escalation-control">Centre escalades</a>
+          <a class="btn btn-light" routerLink="/project-tracking/decision-journal">Journal decisions</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title mb-0">Statuts disponibles</h3>
+      </div>
+      <div class="card-body">
+        <ul class="list-group">
+          @for (status of statusLegend; track status.value) {
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>{{ status.label }}</span>
+              <span class="badge bg-light text-dark">{{ status.value }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Notifications ciblees</h3>
+        @if (unreadNotificationsCount$ | async; as unreadCount) {
+          <span class="badge bg-warning-transparent text-warning">{{ unreadCount }} non lues</span>
+        }
+      </div>
+      <div class="card-body">
+        <div class="list-group">
+          @if (notifications$ | async; as notifications) {
+            @for (notification of notifications; track trackByNotification($index, notification)) {
+              <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                  <div>
+                    <div class="fw-semibold">{{ notification.title }}</div>
+                    <div class="text-muted tx-12">{{ notification.message }}</div>
+                  </div>
+                  <span [class]="'badge ' + notificationTypeClass(notification)">
+                    {{ notificationTypeLabel(notification) }}
+                  </span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                  <span class="text-muted tx-11">{{ notification.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+                  <div class="btn-list">
+                    <a
+                      class="btn btn-sm btn-light"
+                      [routerLink]="notification.actionUrl || '/project-tracking/projects/' + notification.projectId">
+                      Ouvrir
+                    </a>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-primary"
+                      [disabled]="notification.isRead"
+                      (click)="markAsRead(notification)">
+                      {{ notification.isRead ? 'Lu' : 'Marquer lu' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <div class="list-group-item text-muted">Aucune notification pour le moment.</div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

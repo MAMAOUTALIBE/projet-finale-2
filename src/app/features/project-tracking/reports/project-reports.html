@@ -1,0 +1,746 @@
+@if (manualRunError) {
+  <div class="alert alert-danger" role="alert">{{ manualRunError }}</div>
+}
+
+@if (manualRunMessage) {
+  <div class="alert alert-success" role="alert">{{ manualRunMessage }}</div>
+}
+
+<div class="row row-sm">
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Fiabilite digest quotidien (7 runs)</p>
+        @if (dailyReliability$ | async; as reliability) {
+          <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0 fw-semibold">{{ reliability.successRate }}%</h4>
+            <span [class]="'badge ' + reliabilityStatusBadgeClass(reliability)">
+              {{ reliabilityStatusLabel(reliability) }}
+            </span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Runs quotidiens analyses</p>
+        @if (dailyReliability$ | async; as reliability) {
+          <h4 class="mb-0 fw-semibold">{{ reliability.dailyRuns }} / {{ reliability.windowSize }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Echecs quotidiens (fenetre)</p>
+        @if (dailyReliability$ | async; as reliability) {
+          <h4 class="mb-0 fw-semibold" [class]="reliability.failedCount > 0 ? 'text-danger' : ''">
+            {{ reliability.failedCount }}
+          </h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Duree moyenne digest quotidien</p>
+        @if (dailyReliability$ | async; as reliability) {
+          <h4 class="mb-0 fw-semibold">{{ reliability.avgDurationMinutes }} min</h4>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Score resilience reporting (7j)</p>
+        @if (resilienceSummary$ | async; as resilience) {
+          <h4 class="mb-0 fw-semibold">{{ resilience.score }}/100</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Incidents reporting (7j)</p>
+        @if (resilienceSummary$ | async; as resilience) {
+          <h4 class="mb-0 fw-semibold" [class]="resilience.incidents7d > 0 ? 'text-warning' : ''">
+            {{ resilience.incidents7d }}
+          </h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Serie incidents courante</p>
+        @if (resilienceSummary$ | async; as resilience) {
+          <h4 class="mb-0 fw-semibold" [class]="resilience.consecutiveIncidents > 0 ? 'text-danger' : ''">
+            {{ resilience.consecutiveIncidents }}
+          </h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Etat resilience</p>
+        @if (resilienceSummary$ | async; as resilience) {
+          <span [class]="'badge ' + resilienceStatusBadgeClass(resilience)">
+            {{ resilienceStatusLabel(resilience) }}
+          </span>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title mb-0">Incidents digest quotidien</h3>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered text-nowrap mb-0">
+            <thead>
+              <tr>
+                <th>Debut</th>
+                <th>Statut</th>
+                <th>Duree</th>
+                <th>Erreur</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (dailyRunIncidents$ | async; as incidents) {
+                @for (run of incidents; track trackByRun($index, run)) {
+                  <tr>
+                    <td>{{ run.startedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                    <td>
+                      <span [class]="'badge ' + runStatusBadgeClass(run.status)">
+                        {{ runStatusLabel(run.status) }}
+                      </span>
+                    </td>
+                    <td>{{ runDurationMinutes(run) }} min</td>
+                    <td class="text-wrap" style="max-width: 280px;">{{ run.lastError || '-' }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="4" class="text-center text-muted">Aucun incident digest quotidien sur la fenetre courante.</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Projets suivis</p>
+        @if (totals$ | async; as totals) {
+          <h4 class="mb-0 fw-semibold">{{ totals.projects }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Activites en retard</p>
+        @if (totals$ | async; as totals) {
+          <h4 class="mb-0 fw-semibold text-danger">{{ totals.delayedActivities }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Blocages ouverts</p>
+        @if (totals$ | async; as totals) {
+          <h4 class="mb-0 fw-semibold text-danger">{{ totals.openBlockages }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Validations en attente</p>
+        @if (totals$ | async; as totals) {
+          <h4 class="mb-0 fw-semibold text-warning">{{ totals.pendingValidations }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Actions decisionnelles ouvertes</p>
+        @if (totals$ | async; as totals) {
+          <h4 class="mb-0 fw-semibold">{{ totals.openDecisionActions }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Actions decisionnelles en retard</p>
+        @if (totals$ | async; as totals) {
+          <h4 class="mb-0 fw-semibold text-danger">{{ totals.overdueDecisionActions }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Actions escaladees</p>
+        @if (totals$ | async; as totals) {
+          <h4 class="mb-0 fw-semibold text-warning">{{ totals.escalatedDecisionActions }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Escalades hors SLA</p>
+        @if (totals$ | async; as totals) {
+          <h4 class="mb-0 fw-semibold text-danger">{{ totals.breachedEscalations }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Reporting global des projets</h3>
+        <div class="btn-list">
+          <button
+            class="btn btn-outline-warning"
+            type="button"
+            [disabled]="manualRunSubmitting || (hasActiveManualRun$ | async) === true"
+            (click)="requestManualDigest()">
+            {{ manualRunSubmitting ? 'Demande...' : 'Relancer digest' }}
+          </button>
+          <button class="btn btn-primary" type="button" (click)="exportCsv()">Exporter CSV</button>
+        </div>
+      </div>
+
+      <div class="card-body">
+        @if (activeManualRun$ | async; as activeManualRun) {
+          <div class="alert alert-warning mb-3" role="alert">
+            Relance manuelle {{ manualRunStatusLabel(activeManualRun.status).toLowerCase() }}.
+            Aucune nouvelle demande n'est acceptee avant la fin du traitement.
+          </div>
+        }
+
+        <div class="table-responsive">
+          <table class="table table-bordered text-nowrap mb-0">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Projet</th>
+                <th>Statut</th>
+                <th>Progression</th>
+                <th>Etapes</th>
+                <th>Activites</th>
+                <th>Retards</th>
+                <th>Blocages</th>
+                <th>Validations</th>
+                <th>Actions ouvertes</th>
+                <th>Actions en retard</th>
+                <th>Escaladees</th>
+                <th>Hors SLA</th>
+                <th>Mis a jour</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (reportRows$ | async; as rows) {
+                @for (row of rows; track trackByProjectId($index, row)) {
+                  <tr>
+                    <td>{{ row.code }}</td>
+                    <td>{{ row.name }}</td>
+                    <td><span class="badge bg-light text-dark">{{ row.status }}</span></td>
+                    <td>{{ row.progress }}%</td>
+                    <td>{{ row.stages }}</td>
+                    <td>{{ row.activities }}</td>
+                    <td>
+                      <span [class]="row.delayedActivities > 0 ? 'text-danger fw-semibold' : ''">
+                        {{ row.delayedActivities }}
+                      </span>
+                    </td>
+                    <td>
+                      <span [class]="row.openBlockages > 0 ? 'text-danger fw-semibold' : ''">
+                        {{ row.openBlockages }}
+                      </span>
+                    </td>
+                    <td>
+                      <span [class]="row.pendingValidations > 0 ? 'text-warning fw-semibold' : ''">
+                        {{ row.pendingValidations }}
+                      </span>
+                    </td>
+                    <td>{{ row.openDecisionActions }}</td>
+                    <td>
+                      <span [class]="row.overdueDecisionActions > 0 ? 'text-danger fw-semibold' : ''">
+                        {{ row.overdueDecisionActions }}
+                      </span>
+                    </td>
+                    <td>
+                      <span [class]="row.escalatedDecisionActions > 0 ? 'text-warning fw-semibold' : ''">
+                        {{ row.escalatedDecisionActions }}
+                      </span>
+                    </td>
+                    <td>
+                      <span [class]="row.breachedEscalations > 0 ? 'text-danger fw-semibold' : ''">
+                        {{ row.breachedEscalations }}
+                      </span>
+                    </td>
+                    <td>{{ row.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                    <td>
+                      <a class="btn btn-sm btn-outline-primary" [routerLink]="['/project-tracking/projects', row.projectId]">
+                        Ouvrir
+                      </a>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="15" class="text-center text-muted">Aucune donnee de reporting disponible.</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title mb-0">File des relances manuelles</h3>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered text-nowrap mb-0">
+            <thead>
+              <tr>
+                <th>Demande</th>
+                <th>Statut</th>
+                <th>Demandeur</th>
+                <th>Source</th>
+                <th>Duree</th>
+                <th>Run</th>
+                <th>Erreur</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (manualRunHistory$ | async; as manualRuns) {
+                @for (run of manualRuns; track trackByManualRun($index, run)) {
+                  <tr>
+                    <td>{{ run.requestedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                    <td>
+                      <span [class]="'badge ' + manualRunStatusBadgeClass(run.status)">
+                        {{ manualRunStatusLabel(run.status) }}
+                      </span>
+                    </td>
+                    <td>{{ run.requestedByUid || '-' }}</td>
+                    <td>{{ manualRunSourceLabel(run) }}</td>
+                    <td>{{ manualRunDurationMinutes(run) }} min</td>
+                    <td class="text-wrap" style="max-width: 220px;">{{ run.runId || '-' }}</td>
+                    <td class="text-wrap" style="max-width: 240px;">{{ run.lastError || '-' }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">Aucune relance manuelle disponible.</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Dernier digest</p>
+        @if (snapshotHistory$ | async; as snapshots) {
+          <h4 class="mb-0 fw-semibold">
+            {{ snapshots.length ? (snapshots[0].generatedAt | date: 'dd/MM HH:mm') : '-' }}
+          </h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Destinataires (dernier digest)</p>
+        @if (snapshotHistory$ | async; as snapshots) {
+          <h4 class="mb-0 fw-semibold">{{ snapshots.length ? snapshots[0].recipientsCount : 0 }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Notifications (dernier digest)</p>
+        @if (snapshotHistory$ | async; as snapshots) {
+          <h4 class="mb-0 fw-semibold">{{ snapshots.length ? snapshots[0].notificationCount : 0 }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Emails en file (dernier digest)</p>
+        @if (snapshotHistory$ | async; as snapshots) {
+          <h4 class="mb-0 fw-semibold">{{ snapshots.length ? snapshots[0].emailQueuedCount : 0 }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title mb-0">Historique snapshots digest</h3>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered text-nowrap mb-0">
+            <thead>
+              <tr>
+                <th>Date digest</th>
+                <th>Projets</th>
+                <th>Escalades ouvertes</th>
+                <th>Hors SLA</th>
+                <th>Destinataires</th>
+                <th>Emails</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (snapshotHistory$ | async; as snapshots) {
+                @for (snapshot of snapshots; track trackBySnapshot($index, snapshot)) {
+                  <tr>
+                    <td>{{ snapshot.generatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                    <td>{{ snapshot.totals.projects }}</td>
+                    <td>{{ snapshot.escalation?.escalatedOpen ?? 0 }}</td>
+                    <td>
+                      <span [class]="(snapshot.escalation?.breached ?? snapshot.totals.breachedEscalations ?? 0) > 0 ? 'text-danger fw-semibold' : ''">
+                        {{ snapshot.escalation?.breached ?? snapshot.totals.breachedEscalations ?? 0 }}
+                      </span>
+                    </td>
+                    <td>{{ snapshot.recipientsCount }}</td>
+                    <td>{{ snapshot.emailQueuedCount }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="text-center text-muted">Aucun snapshot disponible.</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title mb-0">Historique executions scheduler</h3>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered text-nowrap mb-0">
+            <thead>
+              <tr>
+                <th>Debut</th>
+                <th>Type</th>
+                <th>Statut</th>
+                <th>Duree</th>
+                <th>Notifications</th>
+                <th>Erreur</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (runHistory$ | async; as runs) {
+                @for (run of runs; track trackByRun($index, run)) {
+                  <tr>
+                    <td>{{ run.startedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                    <td>{{ runTypeLabel(run.type) }}</td>
+                    <td>
+                      <span [class]="'badge ' + runStatusBadgeClass(run.status)">
+                        {{ runStatusLabel(run.status) }}
+                      </span>
+                    </td>
+                    <td>{{ runDurationMinutes(run) }} min</td>
+                    <td>{{ run.notificationCount ?? 0 }}</td>
+                    <td class="text-wrap" style="max-width: 220px;">{{ run.lastError || '-' }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="text-center text-muted">Aucune execution disponible.</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title mb-0">Historique controle sante digest</h3>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered text-nowrap mb-0">
+            <thead>
+              <tr>
+                <th>Execution</th>
+                <th>Digest surveille</th>
+                <th>Etat surveille</th>
+                <th>Alerte</th>
+                <th>Auto-relance</th>
+                <th>Etat auto-relance</th>
+                <th>SLA auto-relance</th>
+                <th>Latence (min)</th>
+                <th>Run auto-relance</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (healthCheckHistory$ | async; as checks) {
+                @for (check of checks; track trackByRun($index, check)) {
+                  <tr>
+                    <td>{{ check.startedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                    <td class="text-wrap" style="max-width: 220px;">{{ check.monitoredRunId || '-' }}</td>
+                    <td>
+                      <span [class]="'badge ' + healthCheckMonitoredStatusBadgeClass(check.monitoredRunStatus)">
+                        {{ healthCheckMonitoredStatusLabel(check.monitoredRunStatus) }}
+                      </span>
+                    </td>
+                    <td>{{ check.alertRaised ? 'Oui' : 'Non' }}</td>
+                    <td>{{ check.autoRecoveryTriggered ? 'Declenchee' : 'Non' }}</td>
+                    <td>
+                      <span [class]="'badge ' + autoRecoveryOutcomeBadgeClass(check.autoRecoveryOutcome)">
+                        {{ autoRecoveryOutcomeLabel(check.autoRecoveryOutcome) }}
+                      </span>
+                    </td>
+                    <td>
+                      <span [class]="'badge ' + autoRecoverySlaBadgeClass(check.autoRecoverySlaStatus)">
+                        {{ autoRecoverySlaLabel(check.autoRecoverySlaStatus) }}
+                      </span>
+                    </td>
+                    <td>
+                      {{
+                        check.autoRecoveryLatencyMinutes != null
+                          ? check.autoRecoveryLatencyMinutes + ' / ' + (check.autoRecoverySlaTargetMinutes ?? '-')
+                          : '-'
+                      }}
+                    </td>
+                    <td class="text-wrap" style="max-width: 220px;">{{ check.autoRecoveryRunRequestId || '-' }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="9" class="text-center text-muted">Aucun controle sante disponible.</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Causes de blocage (analyse)</h3>
+      </div>
+      <div class="card-body">
+        @if (blockageInsights$ | async; as insights) {
+          <div class="d-flex gap-3 flex-wrap mb-3">
+            <span class="badge bg-light text-dark">Total: {{ insights.totalBlockages }}</span>
+            <span class="badge bg-danger-transparent text-danger">Ouverts: {{ insights.openBlockages }}</span>
+            <span class="badge bg-success-transparent text-success">Resolus: {{ insights.resolvedBlockages }}</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-bordered text-nowrap mb-0">
+              <thead>
+                <tr>
+                  <th>Cause</th>
+                  <th>Ouverts</th>
+                  <th>Critiques</th>
+                  <th>Projets touches</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (cause of insights.causeDistribution; track trackByCause($index, cause)) {
+                  <tr>
+                    <td>{{ cause.cause }}</td>
+                    <td class="fw-semibold">{{ cause.openCount }}</td>
+                    <td>
+                      <span [class]="cause.criticalOpenCount > 0 ? 'text-danger fw-semibold' : ''">
+                        {{ cause.criticalOpenCount }}
+                      </span>
+                    </td>
+                    <td>{{ cause.impactedProjects }}</td>
+                    <td>{{ cause.totalCount }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="text-center text-muted">Aucune cause de blocage detectee.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title mb-0">Repartition par severite</h3>
+      </div>
+      <div class="card-body">
+        <div class="list-group">
+          @if (blockageInsights$ | async; as insights) {
+            @for (severity of insights.severityDistribution; track trackBySeverity($index, severity)) {
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <span [class]="'badge me-2 ' + severityBadgeClass(severity.severity)">
+                    {{ severity.severity }}
+                  </span>
+                  <span class="text-muted tx-12">{{ severity.openCount }} ouverts / {{ severity.totalCount }} total</span>
+                </div>
+                <span class="fw-semibold">{{ severity.share }}%</span>
+              </div>
+            } @empty {
+              <div class="list-group-item text-muted">Aucune donnee disponible.</div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title mb-0">Projets sous pression (blocages ouverts)</h3>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered text-nowrap mb-0">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Projet</th>
+                <th>Blocages ouverts</th>
+                <th>Critiques ouverts</th>
+                <th>Dernier blocage</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (blockageInsights$ | async; as insights) {
+                @for (project of insights.topProjects; track trackByPressureProject($index, project)) {
+                  <tr>
+                    <td>{{ project.code }}</td>
+                    <td>{{ project.name }}</td>
+                    <td class="fw-semibold">{{ project.openBlockages }}</td>
+                    <td>
+                      <span [class]="project.criticalOpenCount > 0 ? 'text-danger fw-semibold' : ''">
+                        {{ project.criticalOpenCount }}
+                      </span>
+                    </td>
+                    <td>{{ project.lastBlockageAt ? (project.lastBlockageAt | date: 'dd/MM/yyyy HH:mm') : '-' }}</td>
+                    <td>
+                      <a class="btn btn-sm btn-outline-primary" [routerLink]="['/project-tracking/projects', project.projectId]">
+                        Ouvrir
+                      </a>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="text-center text-muted">Aucun projet avec blocage ouvert.</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

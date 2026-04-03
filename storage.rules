@@ -1,0 +1,30 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function allowedContentType() {
+      return request.resource.contentType.matches('^application/pdf$')
+        || request.resource.contentType.matches('^application/msword$')
+        || request.resource.contentType.matches('^application/vnd\\.openxmlformats-officedocument\\.wordprocessingml\\.document$')
+        || request.resource.contentType.matches('^application/vnd\\.ms-excel$')
+        || request.resource.contentType.matches('^application/vnd\\.openxmlformats-officedocument\\.spreadsheetml\\.sheet$')
+        || request.resource.contentType.matches('^application/vnd\\.ms-powerpoint$')
+        || request.resource.contentType.matches('^application/vnd\\.openxmlformats-officedocument\\.presentationml\\.presentation$')
+        || request.resource.contentType.matches('^image/(png|jpeg|webp)$')
+        || request.resource.contentType.matches('^text/plain$');
+    }
+
+    match /project-documents/{projectId}/{fileName} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.size < 10 * 1024 * 1024
+        && allowedContentType()
+        && request.resource.metadata.projectId == projectId
+        && request.resource.metadata.uploaderUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+  }
+}

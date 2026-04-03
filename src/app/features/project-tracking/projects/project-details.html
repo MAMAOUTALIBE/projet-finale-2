@@ -1,0 +1,881 @@
+@if (project$ | async; as project) {
+  @if (submitError) {
+    <div class="alert alert-danger" role="alert">{{ submitError }}</div>
+  }
+
+  <div class="row row-sm">
+    <div class="col-xl-8 col-lg-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="card-title mb-0">Fiche projet</h3>
+          <a class="btn btn-light" routerLink="/project-tracking/projects">Retour</a>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <h4 class="fw-semibold mb-1">{{ project.name }}</h4>
+            <p class="text-muted mb-0">{{ project.code }} - {{ project.ownerOrganization }}</p>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="border rounded p-3 h-100">
+                <p class="mb-1 text-muted">Statut</p>
+                <h6 class="mb-0">{{ project.status }}</h6>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="border rounded p-3 h-100">
+                <p class="mb-1 text-muted">Progression</p>
+                <h6 class="mb-0">{{ project.progress }}%</h6>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="border rounded p-3 h-100">
+                <p class="mb-1 text-muted">Date debut</p>
+                <h6 class="mb-0">{{ project.startDate | date: 'dd/MM/yyyy' }}</h6>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="border rounded p-3 h-100">
+                <p class="mb-1 text-muted">Date fin</p>
+                <h6 class="mb-0">{{ project.endDate | date: 'dd/MM/yyyy' }}</h6>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="border rounded p-3 h-100">
+                <p class="mb-1 text-muted">Budget</p>
+                <h6 class="mb-0">{{ project.budget | number }}</h6>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="border rounded p-3 h-100">
+                <p class="mb-1 text-muted">Sponsor</p>
+                <h6 class="mb-0">{{ project.sponsor }}</h6>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4" />
+          <h6 class="fw-semibold">Description</h6>
+          <p class="mb-0 text-muted">{{ project.description }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-4 col-lg-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0">Resume execution</h3>
+        </div>
+        <div class="card-body">
+          @if (executionSummary$ | async; as summary) {
+            <ul class="list-group">
+              <li class="list-group-item d-flex justify-content-between">
+                <span>Etapes</span>
+                <span class="fw-semibold">{{ summary.stages }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between">
+                <span>Activites</span>
+                <span class="fw-semibold">{{ summary.activities }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between">
+                <span>Activites bloquees</span>
+                <span class="fw-semibold text-danger">{{ summary.blockedActivities }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between">
+                <span>Blocages ouverts</span>
+                <span class="fw-semibold text-danger">{{ summary.openBlockages }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between">
+                <span>Validations en attente</span>
+                <span class="fw-semibold text-warning">{{ summary.pendingValidations }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between">
+                <span>Actions decisionnelles ouvertes</span>
+                <span class="fw-semibold">{{ summary.openDecisionActions }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between">
+                <span>Actions decisionnelles en retard</span>
+                <span class="fw-semibold text-danger">{{ summary.overdueDecisionActions }}</span>
+              </li>
+            </ul>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row row-sm">
+    <div class="col-lg-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0">Pieces justificatives</h3>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="documentForm" (ngSubmit)="uploadDocument(documentInput)" class="row g-3">
+            @if (selectedVersionSourceDocument) {
+              <div class="col-12">
+                <div class="alert alert-info d-flex justify-content-between align-items-center mb-0">
+                  <span>
+                    Nouvelle version pour:
+                    <strong>{{ selectedVersionSourceDocument.fileName }}</strong>
+                    (v{{ selectedVersionSourceDocument.version || 1 }})
+                  </span>
+                  <button type="button" class="btn btn-sm btn-light" (click)="clearDocumentVersionSource()">
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            }
+            <div class="col-md-6">
+              <label class="form-label">Fichier</label>
+              <input
+                #documentInput
+                type="file"
+                class="form-control"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.txt"
+                (change)="onDocumentSelected($event)" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Description (optionnel)</label>
+              <input class="form-control" formControlName="description" />
+            </div>
+            <div class="col-12 d-flex justify-content-between align-items-center">
+              <span class="text-muted tx-12">{{ selectedDocumentName || 'Aucun fichier selectionne' }}</span>
+              <button
+                class="btn btn-primary"
+                type="submit"
+                [disabled]="isSubmittingDocument || !selectedDocumentFile || !(canUploadDocuments$ | async)">
+                {{ isSubmittingDocument ? 'Televersement...' : 'Ajouter piece' }}
+              </button>
+            </div>
+          </form>
+
+          <hr class="my-4" />
+
+          <div class="table-responsive">
+            <table class="table table-bordered text-nowrap mb-0">
+              <thead>
+                <tr>
+                  <th>Fichier</th>
+                  <th>Version</th>
+                  <th>Etat</th>
+                  <th>Validation</th>
+                  <th>Description</th>
+                  <th>Type</th>
+                  <th>Taille</th>
+                  <th>Depose par</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (documents$ | async; as documents) {
+                  @for (document of documents; track trackById($index, document)) {
+                    <tr>
+                      <td>{{ document.fileName }}</td>
+                      <td>v{{ document.version || 1 }}</td>
+                      <td>
+                        <span [class]="'badge ' + documentStatusClass(document)">
+                          {{ documentStatusLabel(document) }}
+                        </span>
+                      </td>
+                      <td>
+                        <span [class]="'badge ' + documentValidationClass(document)">
+                          {{ documentValidationLabel(document) }}
+                        </span>
+                      </td>
+                      <td>{{ document.description || '-' }}</td>
+                      <td>{{ document.fileType }}</td>
+                      <td>{{ formatFileSize(document.size) }}</td>
+                      <td>{{ document.uploadedByUid }}</td>
+                      <td>{{ document.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                      <td>
+                        <a
+                          class="btn btn-sm btn-outline-primary"
+                          [href]="document.downloadUrl"
+                          target="_blank"
+                          rel="noopener noreferrer">
+                          Ouvrir
+                        </a>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-secondary ms-1"
+                          [disabled]="document.isArchived"
+                          (click)="prepareNewDocumentVersion(document)">
+                          Nouvelle version
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-info ms-1"
+                          [disabled]="document.isArchived || processingDocumentDecisionId === document.id || (document.validationStatus ?? 'draft') === 'submitted' || (document.validationStatus ?? 'draft') === 'approved'"
+                          (click)="submitDocumentForValidation(document)">
+                          {{ processingDocumentDecisionId === document.id ? '...' : 'Soumettre' }}
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-success ms-1"
+                          [disabled]="(document.validationStatus ?? 'draft') !== 'submitted' || processingDocumentDecisionId === document.id || !(canDecideValidation$ | async)"
+                          (click)="approveDocumentValidation(document)">
+                          Approuver
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-warning ms-1"
+                          [disabled]="(document.validationStatus ?? 'draft') !== 'submitted' || processingDocumentDecisionId === document.id || !(canDecideValidation$ | async)"
+                          (click)="rejectDocumentValidation(document)">
+                          Rejeter
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-danger ms-1"
+                          [disabled]="document.isArchived || processingDocumentId === document.id"
+                          (click)="archiveDocument(document)">
+                          {{ processingDocumentId === document.id ? '...' : 'Archiver' }}
+                        </button>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="10" class="text-center text-muted">Aucune piece justificative</td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row row-sm">
+    <div class="col-lg-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0">Plan d'actions decisionnelles</h3>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="decisionActionForm" (ngSubmit)="addDecisionAction()" class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Action</label>
+              <input class="form-control" formControlName="title" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Priorite</label>
+              <select class="form-select" formControlName="priority">
+                @for (option of decisionActionPriorityOptions; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Responsable</label>
+              <input class="form-control" formControlName="ownerUid" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Echeance</label>
+              <input type="date" class="form-control" formControlName="dueDate" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Etape cible (optionnel)</label>
+              <select class="form-select" formControlName="stageId">
+                <option value="">Aucune</option>
+                @if (stages$ | async; as stages) {
+                  @for (stage of stages; track trackById($index, stage)) {
+                    <option [value]="stage.id">{{ stage.order }} - {{ stage.name }}</option>
+                  }
+                }
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Validation liee (optionnel)</label>
+              <select class="form-select" formControlName="decisionId">
+                <option value="">Aucune</option>
+                @if (decisions$ | async; as decisions) {
+                  @for (decision of decisions; track trackById($index, decision)) {
+                    <option [value]="decision.id">
+                      Niveau {{ decision.level }} - {{ decision.status }} - {{ decision.validatorUid }}
+                    </option>
+                  }
+                }
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea rows="2" class="form-control" formControlName="description"></textarea>
+            </div>
+            <div class="col-12 d-flex justify-content-end">
+              <button class="btn btn-primary" type="submit" [disabled]="isSubmittingDecisionAction || !(canManageDecisionActions$ | async)">
+                {{ isSubmittingDecisionAction ? 'Enregistrement...' : 'Ajouter action' }}
+              </button>
+            </div>
+          </form>
+
+          <hr class="my-4" />
+
+          <div class="table-responsive">
+            <table class="table table-bordered text-nowrap mb-0">
+              <thead>
+                <tr>
+                  <th>Action</th>
+                  <th>Priorite</th>
+                  <th>Statut</th>
+                  <th>Responsable</th>
+                  <th>Echeance</th>
+                  <th>Reference</th>
+                  <th>Escalade</th>
+                  <th>Note</th>
+                  <th>Mise a jour</th>
+                  <th>Pilotage</th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (decisionActions$ | async; as decisionActions) {
+                  @if (stages$ | async; as stages) {
+                    @for (action of decisionActions; track trackById($index, action)) {
+                      <tr>
+                        <td>
+                          <div class="fw-semibold">{{ action.title }}</div>
+                          <div class="text-muted tx-12">{{ action.description }}</div>
+                        </td>
+                        <td>
+                          <span [class]="'badge ' + decisionActionPriorityClass(action.priority)">
+                            {{ action.priority }}
+                          </span>
+                        </td>
+                        <td>
+                          <span [class]="'badge ' + decisionActionStatusClass(action.status)">
+                            {{ decisionActionStatusLabel(action.status) }}
+                          </span>
+                        </td>
+                        <td>{{ action.ownerUid }}</td>
+                        <td>
+                          <span [class]="isDecisionActionOverdue(action) ? 'text-danger fw-semibold' : ''">
+                            {{ action.dueDate | date: 'dd/MM/yyyy' }}
+                          </span>
+                        </td>
+                        <td>
+                          @if (action.stageId) {
+                            <div class="tx-12">Etape: {{ stageNameById(stages, action.stageId) }}</div>
+                          }
+                          @if (action.decisionId) {
+                            <div class="tx-12 text-muted">Validation: {{ action.decisionId }}</div>
+                          }
+                          @if (!action.stageId && !action.decisionId) {
+                            <span class="text-muted">-</span>
+                          }
+                        </td>
+                        <td class="text-wrap" style="max-width: 220px;">
+                          @if ((action.escalationLevel || 0) > 0) {
+                            <span class="badge bg-danger-transparent text-danger">Niveau {{ action.escalationLevel }}</span>
+                          } @else {
+                            <span class="badge bg-light text-dark">Aucune</span>
+                          }
+                          <div class="text-muted tx-11 mt-1">Relances: {{ action.reminderCount || 0 }}</div>
+                          @if (action.escalationAcknowledgedAt) {
+                            <div class="text-success tx-11 mt-1">
+                              Prise en charge: {{ action.escalationAcknowledgedByUid || '-' }}
+                            </div>
+                          } @else if ((action.escalationLevel || 0) > 0) {
+                            <div class="text-warning tx-11 mt-1">Sans accuse</div>
+                          }
+                        </td>
+                        <td class="text-wrap" style="max-width: 220px;">
+                          <div>{{ action.resolutionNote || '-' }}</div>
+                          @if (action.escalationAckComment) {
+                            <div class="tx-11 text-muted mt-1">{{ action.escalationAckComment }}</div>
+                          }
+                        </td>
+                        <td>{{ action.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                        <td>
+                          <div class="btn-list">
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline-primary"
+                              [disabled]="action.status !== 'todo' || processingDecisionActionId === action.id || !(canManageDecisionActions$ | async)"
+                              (click)="startDecisionAction(action)">
+                              Demarrer
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline-warning"
+                              [disabled]="action.status === 'done' || action.status === 'blocked' || processingDecisionActionId === action.id || !(canManageDecisionActions$ | async)"
+                              (click)="blockDecisionAction(action)">
+                              Bloquer
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline-success"
+                              [disabled]="action.status === 'done' || processingDecisionActionId === action.id || !(canManageDecisionActions$ | async)"
+                              (click)="completeDecisionAction(action)">
+                              Terminer
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline-success"
+                              [disabled]="(action.escalationLevel || 0) <= 0 || action.escalationAcknowledgedAt || processingDecisionActionAckId === action.id || !(canManageDecisionActions$ | async)"
+                              (click)="acknowledgeDecisionActionEscalation(action)">
+                              {{ processingDecisionActionAckId === action.id ? '...' : 'Accuser' }}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="10" class="text-center text-muted">Aucune action decisionnelle enregistree.</td>
+                      </tr>
+                    }
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row row-sm">
+    <div class="col-xl-6 col-lg-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0">Etapes</h3>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="stageForm" (ngSubmit)="addStage()" class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label">Nom etape</label>
+              <input class="form-control" formControlName="name" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Ordre</label>
+              <input type="number" class="form-control" formControlName="order" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Responsable (uid/email)</label>
+              <input class="form-control" formControlName="responsibleUid" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Statut</label>
+              <select class="form-select" formControlName="status">
+                @for (option of stageStatusOptions; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Date debut</label>
+              <input type="date" class="form-control" formControlName="startDate" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Date fin</label>
+              <input type="date" class="form-control" formControlName="endDate" />
+            </div>
+            <div class="col-12 d-flex justify-content-end">
+              <button class="btn btn-primary" type="submit" [disabled]="isSubmittingStage || !(canManageProject$ | async)">
+                {{ isSubmittingStage ? 'Enregistrement...' : 'Ajouter etape' }}
+              </button>
+            </div>
+          </form>
+
+          <hr class="my-4" />
+
+          <div class="table-responsive">
+            <table class="table table-bordered text-nowrap mb-0">
+              <thead>
+                <tr>
+                  <th>Ordre</th>
+                  <th>Etape</th>
+                  <th>Responsable</th>
+                  <th>Statut</th>
+                  <th>Progression</th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (stages$ | async; as stages) {
+                  @for (stage of stages; track trackById($index, stage)) {
+                    <tr>
+                      <td>{{ stage.order }}</td>
+                      <td>{{ stage.name }}</td>
+                      <td>{{ stage.responsibleUid }}</td>
+                      <td>
+                        <span [class]="'badge ' + stageStatusClass(stage.status)">{{ stage.status }}</span>
+                      </td>
+                      <td>{{ stage.progress }}%</td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="5" class="text-center text-muted">Aucune etape enregistree</td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-6 col-lg-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0">Activites</h3>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="activityForm" (ngSubmit)="addActivity()" class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Etape</label>
+              <select class="form-select" formControlName="stageId">
+                <option value="">Selectionner</option>
+                @if (stages$ | async; as stages) {
+                  @for (stage of stages; track trackById($index, stage)) {
+                    <option [value]="stage.id">{{ stage.order }} - {{ stage.name }}</option>
+                  }
+                }
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Statut</label>
+              <select class="form-select" formControlName="status">
+                @for (option of activityStatusOptions; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Titre</label>
+              <input class="form-control" formControlName="title" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Progression (%)</label>
+              <input type="number" class="form-control" formControlName="progress" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Responsable (uid/email)</label>
+              <input class="form-control" formControlName="responsibleUid" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Echeance</label>
+              <input type="date" class="form-control" formControlName="dueDate" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea class="form-control" rows="2" formControlName="description"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Dependances (ids separes par virgule)</label>
+              <input class="form-control" formControlName="dependencyActivityIdsText" />
+            </div>
+            <div class="col-12 d-flex justify-content-end">
+              <button class="btn btn-primary" type="submit" [disabled]="isSubmittingActivity || !(canManageProject$ | async)">
+                {{ isSubmittingActivity ? 'Enregistrement...' : 'Ajouter activite' }}
+              </button>
+            </div>
+          </form>
+
+          <hr class="my-4" />
+
+          <div class="table-responsive">
+            <table class="table table-bordered text-nowrap mb-0">
+              <thead>
+                <tr>
+                  <th>Activite</th>
+                  <th>Etape</th>
+                  <th>Statut</th>
+                  <th>Progression</th>
+                  <th>Responsable</th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (activities$ | async; as activities) {
+                  @if (stages$ | async; as stages) {
+                    @for (activity of activities; track trackById($index, activity)) {
+                      <tr>
+                        <td>{{ activity.title }}</td>
+                        <td>{{ stageNameById(stages, activity.stageId) }}</td>
+                        <td>
+                          <span [class]="'badge ' + activityStatusClass(activity.status)">{{ activity.status }}</span>
+                        </td>
+                        <td>{{ activity.progress }}%</td>
+                        <td>{{ activity.responsibleUid }}</td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="5" class="text-center text-muted">Aucune activite enregistree</td>
+                      </tr>
+                    }
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row row-sm">
+    <div class="col-xl-6 col-lg-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0">Blocages</h3>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="blockageForm" (ngSubmit)="addBlockage()" class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Titre</label>
+              <input class="form-control" formControlName="title" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Severite</label>
+              <select class="form-select" formControlName="severity">
+                @for (option of blockageSeverityOptions; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Etape concernee (optionnel)</label>
+              <select class="form-select" formControlName="stageId">
+                <option value="">Aucune</option>
+                @if (stages$ | async; as stages) {
+                  @for (stage of stages; track trackById($index, stage)) {
+                    <option [value]="stage.id">{{ stage.order }} - {{ stage.name }}</option>
+                  }
+                }
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Activite concernee (optionnel)</label>
+              <select class="form-select" formControlName="activityId">
+                <option value="">Aucune</option>
+                @if (activities$ | async; as activities) {
+                  @for (activity of activities; track trackById($index, activity)) {
+                    <option [value]="activity.id">{{ activity.title }}</option>
+                  }
+                }
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cause</label>
+              <textarea rows="2" class="form-control" formControlName="cause"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Impact</label>
+              <textarea rows="2" class="form-control" formControlName="impact"></textarea>
+            </div>
+            <div class="col-12 d-flex justify-content-end">
+              <button class="btn btn-primary" type="submit" [disabled]="isSubmittingBlockage">
+                {{ isSubmittingBlockage ? 'Enregistrement...' : 'Signaler blocage' }}
+              </button>
+            </div>
+          </form>
+
+          <hr class="my-4" />
+
+          <div class="table-responsive">
+            <table class="table table-bordered text-nowrap mb-0">
+              <thead>
+                <tr>
+                  <th>Blocage</th>
+                  <th>Severite</th>
+                  <th>Etat</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (blockages$ | async; as blockages) {
+                  @for (blockage of blockages; track trackById($index, blockage)) {
+                    <tr>
+                      <td>
+                        <div class="fw-semibold">{{ blockage.title }}</div>
+                        <div class="text-muted tx-12">{{ blockage.cause }}</div>
+                      </td>
+                      <td>
+                        <span [class]="'badge ' + blockageSeverityClass(blockage.severity)">{{ blockage.severity }}</span>
+                      </td>
+                      <td>
+                        <span [class]="blockage.isResolved ? 'badge bg-success-transparent text-success' : 'badge bg-danger-transparent text-danger'">
+                          {{ blockage.isResolved ? 'Resolu' : 'Ouvert' }}
+                        </span>
+                      </td>
+                      <td>{{ blockage.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                      <td>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-success"
+                          [disabled]="blockage.isResolved || processingBlockageId === blockage.id"
+                          (click)="resolveBlockage(blockage)">
+                          {{ processingBlockageId === blockage.id ? '...' : 'Marquer resolu' }}
+                        </button>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="5" class="text-center text-muted">Aucun blocage enregistre</td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-6 col-lg-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0">Validations multi-niveaux</h3>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="validationForm" (ngSubmit)="addValidationRequest()" class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Etape cible</label>
+              <select class="form-select" formControlName="stageId">
+                <option value="">Selectionner</option>
+                @if (stages$ | async; as stages) {
+                  @for (stage of stages; track trackById($index, stage)) {
+                    <option [value]="stage.id">{{ stage.order }} - {{ stage.name }}</option>
+                  }
+                }
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Niveau</label>
+              <input type="number" class="form-control" formControlName="level" min="1" max="3" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Validateur</label>
+              <input class="form-control" formControlName="validatorUid" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Commentaire</label>
+              <textarea rows="2" class="form-control" formControlName="comment"></textarea>
+            </div>
+            <div class="col-12 d-flex justify-content-end">
+              <button class="btn btn-primary" type="submit" [disabled]="isSubmittingValidation || !(canManageProject$ | async)">
+                {{ isSubmittingValidation ? 'Enregistrement...' : 'Demander validation' }}
+              </button>
+            </div>
+          </form>
+
+          <hr class="my-4" />
+
+          <div class="table-responsive">
+            <table class="table table-bordered text-nowrap mb-0">
+              <thead>
+                <tr>
+                  <th>Etape</th>
+                  <th>Niveau</th>
+                  <th>Validateur</th>
+                  <th>Statut</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (decisions$ | async; as decisions) {
+                  @if (stages$ | async; as stages) {
+                    @for (decision of decisions; track trackById($index, decision)) {
+                      <tr>
+                        <td>{{ stageNameById(stages, decision.stageId) }}</td>
+                        <td>{{ decision.level }}</td>
+                        <td>{{ decision.validatorUid }}</td>
+                        <td>
+                          <span [class]="'badge ' + decisionStatusClass(decision.status)">{{ decision.status }}</span>
+                        </td>
+                        <td>
+                          <div class="btn-list">
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline-success"
+                              [disabled]="decision.status !== 'pending' || processingDecisionId === decision.id || !(canDecideValidation$ | async)"
+                              (click)="approveDecision(decision)">
+                              Approuver
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline-danger"
+                              [disabled]="decision.status !== 'pending' || processingDecisionId === decision.id || !(canDecideValidation$ | async)"
+                              (click)="rejectDecision(decision)">
+                              Rejeter
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="5" class="text-center text-muted">Aucune demande de validation</td>
+                      </tr>
+                    }
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row row-sm">
+    <div class="col-xl-6 col-lg-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0">Alertes automatiques</h3>
+        </div>
+        <div class="card-body">
+          <div class="list-group">
+            @if (alerts$ | async; as alerts) {
+              @for (alert of alerts; track trackById($index, alert)) {
+                <div class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                      <div class="fw-semibold">{{ alert.message }}</div>
+                      <div class="text-muted tx-12">Type: {{ alertTypeLabel(alert) }} - Reference: {{ alert.relatedId }}</div>
+                    </div>
+                    <span [class]="'badge ' + alertSeverityClass(alert.severity)">{{ alert.severity }}</span>
+                  </div>
+                </div>
+              } @empty {
+                <div class="list-group-item text-muted">Aucune alerte en cours</div>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-6 col-lg-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0">Historique des actions</h3>
+        </div>
+        <div class="card-body">
+          <div class="list-group">
+            @if (auditLogs$ | async; as logs) {
+              @for (log of logs; track trackById($index, log)) {
+                <div class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                      <div class="fw-semibold">{{ log.message }}</div>
+                      <div class="text-muted tx-12">{{ log.action }} - {{ log.targetType }} - {{ log.targetId }}</div>
+                      <div class="text-muted tx-11">acteur: {{ log.actorUid }}</div>
+                    </div>
+                    <span class="badge bg-light text-dark">{{ log.createdAt | date: 'dd/MM HH:mm' }}</span>
+                  </div>
+                </div>
+              } @empty {
+                <div class="list-group-item text-muted">Aucun log pour le moment</div>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="alert alert-warning mb-0">Projet introuvable.</div>
+}

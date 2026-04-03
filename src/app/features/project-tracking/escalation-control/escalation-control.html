@@ -1,0 +1,209 @@
+@if (submitError) {
+  <div class="alert alert-danger" role="alert">{{ submitError }}</div>
+}
+
+<div class="row row-sm">
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Escalades ouvertes</p>
+        @if (data$ | async; as data) {
+          <h4 class="mb-0 fw-semibold text-danger">{{ data.summary.escalated }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Sans accuse</p>
+        @if (data$ | async; as data) {
+          <h4 class="mb-0 fw-semibold text-warning">{{ data.summary.unacknowledged }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Prises en charge</p>
+        @if (data$ | async; as data) {
+          <h4 class="mb-0 fw-semibold text-success">{{ data.summary.acknowledged }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">SLA hors cible</p>
+        @if (data$ | async; as data) {
+          <h4 class="mb-0 fw-semibold text-danger">{{ data.summary.breached }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">SLA respecte</p>
+        @if (data$ | async; as data) {
+          <h4 class="mb-0 fw-semibold text-success">{{ data.summary.withinSla }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">SLA a risque</p>
+        @if (data$ | async; as data) {
+          <h4 class="mb-0 fw-semibold text-warning">{{ data.summary.atRisk }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1 text-muted">Delai moyen accuse (h)</p>
+        @if (data$ | async; as data) {
+          <h4 class="mb-0 fw-semibold">{{ data.summary.averageAckHours }}</h4>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-sm">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Centre de pilotage des escalades</h3>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label">Niveau escalade</label>
+            <select class="form-select" [(ngModel)]="selectedLevel">
+              <option value="all">Tous</option>
+              <option value="1">Niveau 1</option>
+              <option value="2">Niveau 2</option>
+              <option value="3">Niveau 3+</option>
+            </select>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label">Etat prise en charge</label>
+            <select class="form-select" [(ngModel)]="selectedAck">
+              <option value="all">Tous</option>
+              <option value="pending">Sans accuse</option>
+              <option value="acknowledged">Prise en charge</option>
+            </select>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <label class="form-label">Filtre SLA</label>
+            <select class="form-select" [(ngModel)]="selectedSla">
+              <option value="all">Tous</option>
+              <option value="within_sla">Dans SLA</option>
+              <option value="at_risk">A risque</option>
+              <option value="breached">Hors SLA</option>
+              <option value="pending">En attente</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered text-nowrap mb-0">
+            <thead>
+              <tr>
+                <th>Projet</th>
+                <th>Action</th>
+                <th>Escalade</th>
+                <th>Echeance</th>
+                <th>Retard</th>
+                <th>SLA</th>
+                <th>Responsable</th>
+                <th>Statut action</th>
+                <th>Prise en charge</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (data$ | async; as data) {
+                @for (item of filterEscalations(data.items); track trackByItem($index, item)) {
+                  <tr>
+                    <td>
+                      <div class="fw-semibold">{{ item.projectName }}</div>
+                      <div class="text-muted tx-12">{{ item.projectCode }}</div>
+                    </td>
+                    <td>
+                      <div class="fw-semibold">{{ item.title }}</div>
+                      <div class="text-muted tx-12">{{ item.description }}</div>
+                    </td>
+                    <td>
+                      <span [class]="'badge ' + escalationBadgeClass(item.escalationLevel)">
+                        Niveau {{ item.escalationLevel }}
+                      </span>
+                    </td>
+                    <td>{{ item.dueDate | date: 'dd/MM/yyyy' }}</td>
+                    <td>
+                      <span [class]="item.overdue ? 'text-danger fw-semibold' : ''">
+                        {{ overdueDays(item) }} j
+                      </span>
+                    </td>
+                    <td>
+                      <div>
+                        <span [class]="'badge ' + slaBadgeClass(item.slaStatus || 'pending')">
+                          {{ slaLabel(item.slaStatus || 'pending') }}
+                        </span>
+                      </div>
+                      <div class="text-muted tx-11 mt-1">
+                        Cible: {{ item.slaTargetHours || 0 }}h - Ecoule: {{ item.slaElapsedHours || 0 }}h
+                      </div>
+                    </td>
+                    <td>{{ item.ownerUid }}</td>
+                    <td>
+                      <span [class]="'badge ' + statusBadgeClass(item.status)">{{ statusLabel(item.status) }}</span>
+                    </td>
+                    <td class="text-wrap" style="max-width: 220px;">
+                      @if (item.escalationAcknowledgedAt) {
+                        <span class="badge bg-success-transparent text-success">Prise en charge</span>
+                        <div class="text-muted tx-11 mt-1">{{ item.escalationAcknowledgedByUid || '-' }}</div>
+                        <div class="text-muted tx-11">{{ item.escalationAcknowledgedAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+                        <div class="tx-11 mt-1">{{ item.escalationAckComment || '-' }}</div>
+                      } @else {
+                        <span class="badge bg-warning-transparent text-warning">Sans accuse</span>
+                      }
+                    </td>
+                    <td>
+                      <div class="btn-list">
+                        <a class="btn btn-sm btn-outline-primary" [routerLink]="item.actionUrl">Ouvrir</a>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-success"
+                          [disabled]="item.escalationAcknowledgedAt || processingActionId === item.id"
+                          (click)="acknowledgeEscalation(item)">
+                          {{ processingActionId === item.id ? '...' : 'Accuser' }}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="10" class="text-center text-muted">Aucune escalade active.</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

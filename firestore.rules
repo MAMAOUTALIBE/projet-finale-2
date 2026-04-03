@@ -1,0 +1,251 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDocPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function userProfileExists() {
+      return signedIn() && exists(userDocPath());
+    }
+
+    function currentRole() {
+      return userProfileExists() ? get(userDocPath()).data.role : 'none';
+    }
+
+    function hasRole(roles) {
+      return signedIn() && currentRole() in roles;
+    }
+
+    function canWriteProjects() {
+      return hasRole(['admin', 'pmo', 'project_manager']);
+    }
+
+    function canDecideValidation() {
+      return hasRole(['admin', 'pmo', 'project_manager', 'validator', 'decision_maker']);
+    }
+
+    function canManageDecisionActions() {
+      return hasRole(['admin', 'pmo', 'project_manager', 'decision_maker']);
+    }
+
+    function isValidRole(role) {
+      return role in [
+        'admin',
+        'pmo',
+        'project_manager',
+        'stakeholder',
+        'validator',
+        'decision_maker'
+      ];
+    }
+
+    function canCreateOwnProfile(uid) {
+      return request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && isValidRole(request.resource.data.role)
+        && (
+          request.resource.data.role == 'stakeholder'
+          || (
+            request.resource.data.role == 'admin'
+            && request.auth.token.email != null
+            && request.auth.token.email.matches('^[sS][pP][rR][uU][kK][oO]@admin\\.com$')
+          )
+        );
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || hasRole(['admin', 'pmo']));
+      allow create: if signedIn() && canCreateOwnProfile(uid);
+      allow update: if signedIn() && (
+        (
+          request.auth.uid == uid
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.role == resource.data.role
+          && isValidRole(request.resource.data.role)
+        )
+        || hasRole(['admin'])
+      );
+      allow delete: if hasRole(['admin']);
+    }
+
+    match /projects/{projectId} {
+      allow read: if signedIn();
+      allow create: if canWriteProjects()
+        && request.resource.data.id == projectId
+        && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if canWriteProjects();
+    }
+
+    match /projectStages/{stageId} {
+      allow read: if signedIn();
+      allow create, update, delete: if canWriteProjects();
+    }
+
+    match /projectActivities/{activityId} {
+      allow read: if signedIn();
+      allow create, update, delete: if canWriteProjects();
+    }
+
+    match /projectBlockages/{blockageId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if canWriteProjects() || (
+        signedIn()
+        && (resource.data.ownerUid == request.auth.uid || hasRole(['decision_maker']))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isResolved', 'resolvedAt'])
+        && request.resource.data.isResolved == true
+      );
+      allow delete: if canWriteProjects();
+    }
+
+    match /projectDecisions/{decisionId} {
+      allow read: if signedIn();
+      allow create: if canWriteProjects()
+        && request.resource.data.requestedByUid == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update: if canDecideValidation()
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['approved', 'rejected']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'comment', 'decidedAt']);
+      allow delete: if false;
+    }
+
+    match /decisionActions/{actionId} {
+      allow read: if signedIn();
+      allow create: if canManageDecisionActions()
+        && request.resource.data.id == actionId
+        && request.resource.data.createdByUid == request.auth.uid
+        && request.resource.data.projectId is string
+        && request.resource.data.title is string
+        && request.resource.data.ownerUid is string
+        && request.resource.data.dueDate is string
+        && request.resource.data.priority in ['critical', 'high', 'medium', 'low']
+        && request.resource.data.status in ['todo', 'in_progress', 'blocked', 'done']
+        && request.resource.data.createdAt is int
+        && request.resource.data.updatedAt is int;
+      allow update: if signedIn()
+        && (canManageDecisionActions() || resource.data.ownerUid == request.auth.uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'updatedAt',
+          'completedAt',
+          'resolutionNote',
+          'escalationAcknowledgedAt',
+          'escalationAcknowledgedByUid',
+          'escalationAckComment'
+        ])
+        && request.resource.data.status in ['todo', 'in_progress', 'blocked', 'done']
+        && request.resource.data.updatedAt is int
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['escalationAcknowledgedByUid'])
+          || request.resource.data.escalationAcknowledgedByUid == request.auth.uid
+        )
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['escalationAcknowledgedAt'])
+          || request.resource.data.escalationAcknowledgedAt is int
+        );
+      allow delete: if false;
+    }
+
+    match /projectDocuments/{documentId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.id == documentId
+        && request.resource.data.uploadedByUid == request.auth.uid
+        && request.resource.data.projectId is string
+        && request.resource.data.documentGroupId is string
+        && request.resource.data.version is int
+        && request.resource.data.version >= 1
+        && request.resource.data.isLatest == true
+        && request.resource.data.isArchived == false
+        && request.resource.data.validationStatus in ['draft', 'submitted', 'approved', 'rejected']
+        && request.resource.data.downloadUrl is string
+        && request.resource.data.storagePath is string;
+      allow update: if signedIn()
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.projectId == resource.data.projectId
+        && request.resource.data.uploadedByUid == resource.data.uploadedByUid
+        && request.resource.data.storagePath == resource.data.storagePath
+        && request.resource.data.downloadUrl == resource.data.downloadUrl
+        && (
+          (
+            (canWriteProjects() || resource.data.uploadedByUid == request.auth.uid)
+            && request.resource.data.validationStatus in ['draft', 'submitted', 'approved', 'rejected']
+          )
+          || (
+            canDecideValidation()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'validationStatus',
+              'decidedAt',
+              'decidedByUid',
+              'decisionComment'
+            ])
+            && request.resource.data.validationStatus in ['approved', 'rejected']
+            && request.resource.data.decidedByUid == request.auth.uid
+          )
+        );
+      allow delete: if false;
+    }
+
+    match /projectNotifications/{notificationId} {
+      allow read: if signedIn() && resource.data.recipientUid == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.id == notificationId
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.recipientUid is string
+        && request.resource.data.projectId is string
+        && request.resource.data.type is string
+        && request.resource.data.isRead == false
+        && request.resource.data.createdAt is int;
+      allow update: if signedIn()
+        && resource.data.recipientUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt'])
+        && request.resource.data.isRead == true;
+      allow delete: if false;
+    }
+
+    match /notificationOutbox/{outboxId} {
+      allow read: if hasRole(['admin', 'pmo']);
+      allow create: if signedIn()
+        && request.resource.data.id == outboxId
+        && request.resource.data.requestedByUid == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update, delete: if false;
+    }
+
+    match /reportManualRuns/{runId} {
+      allow read: if hasRole(['admin', 'pmo', 'project_manager', 'decision_maker']);
+      allow create: if signedIn()
+        && hasRole(['admin', 'pmo', 'project_manager', 'decision_maker'])
+        && request.resource.data.id == runId
+        && request.resource.data.requestedByUid == request.auth.uid
+        && request.resource.data.status == 'requested'
+        && request.resource.data.requestedAt is int;
+      allow update, delete: if false;
+    }
+
+    match /projectReportSnapshots/{snapshotId} {
+      allow read: if hasRole(['admin', 'pmo', 'project_manager', 'decision_maker']);
+      allow create, update, delete: if false;
+    }
+
+    match /reportDispatchRuns/{runId} {
+      allow read: if hasRole(['admin', 'pmo', 'project_manager', 'decision_maker']);
+      allow create, update, delete: if false;
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.id == logId
+        && request.resource.data.actorUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+  }
+}
