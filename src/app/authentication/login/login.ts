@@ -25,7 +25,7 @@ export class Login {
   readonly hasFirebaseConfig = environment.hasFirebaseConfig;
 
   disabled = '';
-  active = 'Firebase';
+  active = this.enableLocalDemo && !this.hasFirebaseConfig ? 'Angular' : 'Firebase';
   showLoader: boolean | undefined;
   public angularLoginForm!: FormGroup;
   public firebaseLoginForm!: FormGroup;

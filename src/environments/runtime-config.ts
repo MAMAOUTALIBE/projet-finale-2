@@ -78,7 +78,7 @@ export function createEnvironment(options: {
 
   return {
     production: options.production,
-    enableLocalDemo: options.production ? false : runtimeConfig.enableLocalDemo || options.enableLocalDemo,
+    enableLocalDemo: runtimeConfig.enableLocalDemo || (!options.production && options.enableLocalDemo),
     hasFirebaseConfig: hasRequiredFirebaseConfig(firebase),
     firebase,
     googleMapsApiKey: runtimeConfig.googleMapsApiKey,
