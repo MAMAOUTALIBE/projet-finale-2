@@ -22,6 +22,7 @@ export class Login {
   private renderer = inject(Renderer2);
   private toastr = inject(ToastrService);
   readonly enableLocalDemo = environment.enableLocalDemo;
+  readonly autoDemoLogin = environment.autoDemoLogin;
   readonly hasFirebaseConfig = environment.hasFirebaseConfig;
 
   disabled = '';
@@ -49,6 +50,15 @@ export class Login {
       username: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required]
     });
+
+    if (this.autoDemoLogin && this.enableLocalDemo && !this.hasFirebaseConfig && !this.authservice.isDemoSessionActive()) {
+      this.angularLoginForm.patchValue({
+        username: 'spruko@admin.com',
+        password: 'sprukoadmin',
+      });
+
+      queueMicrotask(() => this.submitDemoLogin());
+    }
   }
 
   clearErrorMessage() {

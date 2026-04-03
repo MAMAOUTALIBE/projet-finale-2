@@ -9,4 +9,5 @@ window.__APP_CONFIG__ = {
     measurementId: '',
   },
   googleMapsApiKey: '',
+  autoDemoLogin: false,
 };

@@ -59,6 +59,7 @@ async function writeRuntimeConfig() {
     },
     googleMapsApiKey: normalizeString(process.env.GOOGLE_MAPS_API_KEY),
     enableLocalDemo: normalizeBoolean(process.env.ENABLE_LOCAL_DEMO, false),
+    autoDemoLogin: normalizeBoolean(process.env.AUTO_DEMO_LOGIN, false),
   };
 
   await fs.writeFile(

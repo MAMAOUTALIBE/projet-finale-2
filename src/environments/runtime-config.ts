@@ -12,11 +12,13 @@ export interface AppRuntimeConfig {
   firebase?: Partial<FirebaseClientConfig>;
   googleMapsApiKey?: string;
   enableLocalDemo?: boolean;
+  autoDemoLogin?: boolean;
 }
 
 export interface AppEnvironment {
   production: boolean;
   enableLocalDemo: boolean;
+  autoDemoLogin: boolean;
   hasFirebaseConfig: boolean;
   firebase: FirebaseClientConfig;
   googleMapsApiKey: string;
@@ -52,6 +54,7 @@ function readRuntimeConfig(): Required<AppRuntimeConfig> {
     },
     googleMapsApiKey: normalizeString(runtimeConfig?.googleMapsApiKey),
     enableLocalDemo: runtimeConfig?.enableLocalDemo ?? false,
+    autoDemoLogin: runtimeConfig?.autoDemoLogin ?? false,
   };
 }
 
@@ -79,6 +82,7 @@ export function createEnvironment(options: {
   return {
     production: options.production,
     enableLocalDemo: runtimeConfig.enableLocalDemo || (!options.production && options.enableLocalDemo),
+    autoDemoLogin: runtimeConfig.autoDemoLogin,
     hasFirebaseConfig: hasRequiredFirebaseConfig(firebase),
     firebase,
     googleMapsApiKey: runtimeConfig.googleMapsApiKey,
